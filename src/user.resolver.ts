@@ -1,33 +1,70 @@
+/* eslint-disable prettier/prettier */
 import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
-import { User } from './user.model';
-import { CreateUserInput, UpdateUserInput } from './user.input';
+import { ValidationPipe, UsePipes } from '@nestjs/common';
+import { UserDto } from './user.model';
 import { UserService } from './user.service';
+import { CreateUserInputDto, UpdateUserInputDto, UserFilterDto } from './user.input';
 
-@Resolver(() => User)
+@Resolver(() => UserDto)
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
-  @Query(() => [User], { name: 'users' })
-  findAll(): User[] {
-    return this.userService.findAll();
+  @Query(() => [UserDto], { name: 'users' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  findAll(@Args('filter', { nullable: true }) filter?: UserFilterDto): UserDto[] {
+    const entities = this.userService.findAll(filter);
+    return entities.map(entity => ({
+      id: entity.id,
+      name: entity.name,
+      email: entity.email,
+      age: entity.age,
+      createdAt: entity.createdAt,
+      isActive: entity.isActive,
+    }));
   }
 
-  @Query(() => User, { name: 'user', nullable: true })
-  findOne(@Args('id', { type: () => ID }) id: string): User | undefined {
-    return this.userService.findOne(id);
+  @Query(() => UserDto, { name: 'user' })
+  findOne(@Args('id', { type: () => ID }) id: string): UserDto {
+    const entity = this.userService.findOne(id);
+    return {
+      id: entity.id,
+      name: entity.name,
+      email: entity.email,
+      age: entity.age,
+      createdAt: entity.createdAt,
+      isActive: entity.isActive,
+    };
   }
 
-  @Mutation(() => User)
-  createUser(@Args('createUserInput') createUserInput: CreateUserInput): User {
-    return this.userService.create(createUserInput);
+  @Mutation(() => UserDto)
+  @UsePipes(new ValidationPipe({ transform: true }))
+  createUser(@Args('createUserInput') createUserInput: CreateUserInputDto): UserDto {
+    const entity = this.userService.create(createUserInput);
+    return {
+      id: entity.id,
+      name: entity.name,
+      email: entity.email,
+      age: entity.age,
+      createdAt: entity.createdAt,
+      isActive: entity.isActive,
+    };
   }
 
-  @Mutation(() => User, { nullable: true })
+  @Mutation(() => UserDto)
+  @UsePipes(new ValidationPipe({ transform: true }))
   updateUser(
     @Args('id', { type: () => ID }) id: string,
-    @Args('updateUserInput') updateUserInput: UpdateUserInput,
-  ): User | undefined {
-    return this.userService.update(id, updateUserInput);
+    @Args('updateUserInput') updateUserInput: UpdateUserInputDto,
+  ): UserDto {
+    const entity = this.userService.update(id, updateUserInput);
+    return {
+      id: entity.id,
+      name: entity.name,
+      email: entity.email,
+      age: entity.age,
+      createdAt: entity.createdAt,
+      isActive: entity.isActive,
+    };
   }
 
   @Mutation(() => Boolean)
